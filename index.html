@@ -43,7 +43,6 @@
             outline: none;
         }
 
-        /* Animações e Utilitários */
         .loader-overlay {
             position: absolute; inset: 0; background: rgba(15, 23, 42, 0.95);
             display: flex; flex-direction: column; align-items: center; justify-content: center;
@@ -51,10 +50,8 @@
         }
         .loader-overlay.active { opacity: 1; pointer-events: all; }
         .tab-bg { transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); background-color: var(--accent); }
-        
         .text-accent { color: var(--accent); transition: color 0.5s; }
         .bg-accent { background-color: var(--accent); transition: background-color 0.5s; }
-        .border-accent { border-color: var(--accent); transition: border-color 0.5s; }
     </style>
 
     <script>
@@ -83,7 +80,7 @@
     <div class="fixed top-0 left-0 w-full bg-warning/20 border-b border-warning/30 text-warning text-center py-2 z-[60] backdrop-blur-md">
         <p class="text-[10px] md:text-xs font-bold uppercase tracking-widest flex items-center justify-center gap-2">
             <i class="fa-solid fa-triangle-exclamation"></i> 
-            Sistema em Desenvolvimento (Versão BETA) — Pode conter falhas
+            Sistema em Desenvolvimento (Versão BETA)
         </p>
     </div>
 
@@ -113,8 +110,7 @@
         </form>
         
         <div class="mt-6 text-center border-t border-slate-700 pt-4">
-            <p class="text-[10px] text-yellow-500/80 font-bold">⚠ Versão Beta: Funcionalidades em teste</p>
-            <p class="text-[10px] text-slate-500 mt-1">Desenvolvido por Benilson Amorim</p>
+            <p class="text-[10px] text-slate-500">Desenvolvido por Benilson Amorim</p>
         </div>
     </section>
 
@@ -211,7 +207,7 @@
                             <p class="text-xs text-slate-300">Digite o código > Enter > Digite a data > Enter.</p>
                         </div>
                         <div>
-                            <label class="text-xs font-bold text-slate-400 uppercase ml-1">Código (Somente Números)</label>
+                            <label class="text-xs font-bold text-slate-400 uppercase ml-1">Código</label>
                             <div class="relative mt-1">
                                 <i class="fa-solid fa-barcode absolute left-3 top-3 text-slate-500"></i>
                                 <input type="text" id="valCode" inputmode="numeric" class="input-std w-full rounded-xl py-3 pl-10 pr-4 font-mono text-lg" placeholder="Scan..." 
@@ -221,7 +217,7 @@
                             <div id="valPreview" class="h-5 text-xs font-bold mt-1 pl-1 truncate"></div>
                         </div>
                         <div id="dateContainer" class="hidden">
-                            <label class="text-xs font-bold text-accent uppercase ml-1">Validade (Somente Números)</label>
+                            <label class="text-xs font-bold text-accent uppercase ml-1">Validade</label>
                             <div class="relative mt-1">
                                 <i class="fa-solid fa-calendar absolute left-3 top-3 text-accent"></i>
                                 <input type="text" id="valDate" inputmode="numeric" class="input-std w-full rounded-xl py-3 pl-10 pr-4 font-mono text-lg border-accent focus:border-accent" placeholder="MM/AAAA" 
@@ -288,22 +284,16 @@
                     </div>
 
                     <div class="grid grid-cols-2 md:grid-cols-4 gap-2 mt-4">
-                        <!-- Botão Gerar -->
                         <button onclick="generateZPL()" class="col-span-2 md:col-span-1 bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-xl transition shadow-lg flex justify-center items-center gap-2 active:scale-95">
                             <i class="fa-solid fa-wand-magic-sparkles"></i> Gerar
                         </button>
-                        
-                        <!-- Botão Imprimir Direto -->
                         <button onclick="printDirect()" id="btnPrintDirect" disabled class="col-span-2 md:col-span-1 bg-slate-700 text-slate-500 font-bold py-3 rounded-xl transition flex justify-center items-center gap-2 cursor-not-allowed border border-slate-600">
                             <i class="fa-solid fa-print"></i> Direto
                         </button>
-
-                        <!-- Botão PDF -->
-                        <button onclick="printPDF()" id="btnPDF" disabled class="col-span-2 md:col-span-1 bg-slate-700 text-slate-500 font-bold py-3 rounded-xl transition flex justify-center items-center gap-2 cursor-not-allowed border border-slate-600">
-                            <i class="fa-solid fa-file-pdf"></i> PDF
+                        <button onclick="copyZPL()" id="btnCopy" disabled class="bg-slate-700 text-slate-500 font-bold py-3 rounded-xl transition flex justify-center items-center gap-2 cursor-not-allowed border border-slate-600">
+                            <i class="fa-solid fa-copy"></i> Copiar
                         </button>
-
-                        <button onclick="downloadFile()" id="btnDownload" disabled class="col-span-2 md:col-span-1 bg-slate-700 text-slate-500 font-bold py-3 rounded-xl transition flex justify-center items-center gap-2 cursor-not-allowed border border-slate-600">
+                        <button onclick="downloadFile()" id="btnDownload" disabled class="bg-slate-700 text-slate-500 font-bold py-3 rounded-xl transition flex justify-center items-center gap-2 cursor-not-allowed border border-slate-600">
                             <i class="fa-solid fa-download"></i> Baixar
                         </button>
                     </div>
@@ -330,7 +320,7 @@
             <div class="p-8 space-y-6 max-h-[70vh] overflow-y-auto">
                 <div class="p-3 bg-yellow-500/10 border-l-4 border-yellow-500 rounded">
                     <p class="text-xs text-yellow-200 font-bold">AVISO: Se não imprimir direto</p>
-                    <p class="text-[10px] text-yellow-100/70 mt-1">O Windows pode estar bloqueando a porta. Instale a impressora como <strong>"Generic / Text Only"</strong> ou use o botão <strong>"Gerar PDF"</strong>.</p>
+                    <p class="text-[10px] text-yellow-100/70 mt-1">Instale a impressora como <strong>"Generic / Text Only"</strong>.</p>
                 </div>
                 <div>
                     <h4 class="text-accent font-bold text-sm uppercase mb-3">1. Impressão Direta (USB)</h4>
@@ -339,20 +329,6 @@
                             <i class="fa-brands fa-usb"></i> <span>Conectar Impressora</span>
                         </button>
                         <span class="text-xs text-slate-400"> <- 1º Passo</span>
-                    </div>
-                    <ol class="list-decimal list-inside text-xs text-slate-400 space-y-1">
-                        <li>Use o navegador <strong>Google Chrome</strong> ou <strong>Edge</strong> no PC.</li>
-                        <li>Conecte a impressora Zebra via USB.</li>
-                        <li>Clique no botão acima "Conectar Impressora".</li>
-                        <li>Selecione a impressora na janela que abrir.</li>
-                        <li>Após gerar, use o botão <strong>"Direto"</strong> no painel principal.</li>
-                    </ol>
-                </div>
-                <div>
-                    <h4 class="text-accent font-bold text-sm uppercase mb-3">2. Colunas da Planilha (Posição Fixa)</h4>
-                    <div class="grid grid-cols-3 gap-2 text-xs text-slate-300 font-mono">
-                        <div class="bg-slate-900 p-2 rounded">A: CÓDIGO</div><div class="bg-slate-900 p-2 rounded">B: NOME</div><div class="bg-slate-900 p-2 rounded">E: RUA</div>
-                        <div class="bg-slate-900 p-2 rounded">F: RACK</div><div class="bg-slate-900 p-2 rounded">G: LINHA</div><div class="bg-slate-900 p-2 rounded">H: COLUNA</div>
                     </div>
                 </div>
                 <div class="border-t border-slate-700 pt-6 text-center">
@@ -402,7 +378,7 @@
                     document.getElementById('btnPrintDirect').classList.add('bg-success', 'text-white', 'hover:brightness-110');
                 }
             } catch (err) {
-                alert("Erro conexão: " + err.message + "\nDica: Instale o driver da impressora como 'Generic / Text Only' ou use o botão 'Gerar PDF'.");
+                alert("Erro conexão: " + err.message);
             }
         }
 
@@ -420,31 +396,6 @@
             } catch (err) {
                 alert("Erro ao imprimir: " + err.message);
             }
-        }
-
-        // --- IMPRESSÃO VIA PDF (PLANO B) ---
-        function printPDF() {
-            const zpl = document.getElementById('finalZPL').value;
-            if (!zpl) return alert("Gere o código primeiro.");
-            
-            // Usando API pública do Labelary
-            const url = `http://api.labelary.com/v1/printers/8dpmm/labels/4x6/0/`;
-            
-            const form = document.createElement("form");
-            form.setAttribute("method", "post");
-            form.setAttribute("action", url);
-            form.setAttribute("target", "_blank"); 
-
-            const input = document.createElement("textarea");
-            input.setAttribute("name", "zpl");
-            input.value = zpl;
-            
-            form.appendChild(input);
-            document.body.appendChild(form);
-            form.submit();
-            document.body.removeChild(form);
-            
-            showToast("Gerando PDF...");
         }
 
         // Upload
@@ -470,6 +421,12 @@
                     document.getElementById('rowCount').innerText = `${inventory.length} Produtos`;
                     document.getElementById('globalStatus').innerHTML = `<i class="fa-solid fa-circle text-[8px]"></i> Base Ativa`;
                     document.getElementById('globalStatus').className = "hidden md:inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-800 border border-emerald-500/50 text-xs font-mono text-emerald-400 transition-colors duration-300";
+                    
+                    // DIAGNÓSTICO: Mostra o primeiro produto para conferência
+                    if(inventory.length > 0) {
+                        alert(`Diagnóstico de Leitura:\n1º Produto: ${inventory[0].COD} - ${inventory[0].NOM}\nSe estiver errado, verifique as colunas A e B.`);
+                    }
+                    
                     showToast("Carregamento Concluído");
                 } catch (err) { alert("Erro: " + err.message); }
                 finally { document.getElementById('uploadLoader').classList.remove('active'); e.target.value = ''; }
@@ -510,7 +467,24 @@
                 switchTab('unit');
             }
         }
-        function findProduct(code) { return inventory.find(i => i.COD == code); }
+        
+        // --- BUSCA BLINDADA ---
+        function findProduct(code) { 
+            // 1. Tenta match exato de string
+            let found = inventory.find(i => i.COD == code);
+            if (found) return found;
+
+            // 2. Tenta match numérico (ignora zeros a esquerda)
+            try {
+                const searchNum = parseInt(code);
+                if (!isNaN(searchNum)) {
+                    found = inventory.find(i => parseInt(i.COD) === searchNum);
+                    if (found) return found;
+                }
+            } catch(e) {}
+
+            return null;
+        }
         
         // EAN SCAN LOGIC FIX
         function extractEAN(val) {
@@ -541,7 +515,7 @@
                 setTimeout(()=>document.getElementById('valDate').focus(), 100); 
             }
             else { 
-                prev.innerText = val.length > 3 ? "Não encontrado" : ""; 
+                prev.innerText = val.length > 3 ? "Não encontrado: " + finalVal : ""; 
                 prev.className = "h-5 text-xs font-bold mt-1 pl-1 truncate text-danger"; 
                 dc.classList.add('hidden'); 
             }
@@ -549,8 +523,10 @@
         
         function checkEndCode(el) {
             let val = el.value.replace(/\D/g,''); 
-            if(val.length >= 12) val = extractEAN(val); 
-            const prod = findProduct(val); 
+            let finalVal = val;
+            if(val.length >= 12) finalVal = extractEAN(val); 
+            
+            const prod = findProduct(finalVal); 
             const prev = document.getElementById('endPreview');
             if(prod) { prev.innerText=prod.NOM; prev.className="h-5 text-xs font-bold mt-1 pl-1 truncate text-success"; }
             else { prev.innerText=val.length>3?"Não encontrado":""; prev.className="h-5 text-xs font-bold mt-1 pl-1 truncate text-slate-500"; }
@@ -570,6 +546,8 @@
                 document.getElementById('valCode').value=""; document.getElementById('valDate').value=""; 
                 document.getElementById('valPreview').innerText=""; document.getElementById('dateContainer').classList.add('hidden'); 
                 document.getElementById('valCode').focus(); showToast("Adicionado!"); 
+            } else {
+                alert("Erro: Produto " + code + " não encontrado na hora de adicionar.");
             }
         }
 
@@ -582,7 +560,7 @@
             if(prod){ 
                 printQueue.push({...prod,validade:""}); updateQueueUI(); 
                 el.value=""; el.focus(); showToast("Adicionado!"); 
-            } else alert("Produto não encontrado");
+            } else alert("Produto " + val + " não encontrado");
         }
 
         function addEndList() {
@@ -597,8 +575,8 @@
         // Queue
         function updateQueueUI() {
             const tbody=document.getElementById('queueTable'); document.getElementById('queueBadge').innerText=printQueue.length;
-            const btnD=document.getElementById('btnDownload'), btnC=document.getElementById('btnCopy'), btnP=document.getElementById('btnPrintDirect'), btnPdf=document.getElementById('btnPDF');
-            [btnD, btnC, btnP, btnPdf].forEach(b => { b.disabled=true; b.classList.add('bg-slate-700','cursor-not-allowed','text-slate-500'); b.classList.remove('bg-success','bg-accent','text-white','hover:brightness-110'); });
+            const btnD=document.getElementById('btnDownload'), btnC=document.getElementById('btnCopy'), btnP=document.getElementById('btnPrintDirect');
+            [btnD, btnC, btnP].forEach(b => { b.disabled=true; b.classList.add('bg-slate-700','cursor-not-allowed','text-slate-500'); b.classList.remove('bg-success','bg-accent','text-white','hover:brightness-110'); });
             document.getElementById('finalZPL').value="";
             if(printQueue.length===0){ tbody.innerHTML=`<tr><td colspan="4" class="p-10 text-center text-slate-600 italic">Fila vazia.</td></tr>`; return; }
             tbody.innerHTML="";
@@ -665,15 +643,13 @@ ${bot.validade ? `^FO235,590^GB550,65,85^FS\n^FO250,600^A0N,95,90^FR^FDVAL: ${bo
             const btnD = document.getElementById('btnDownload');
             const btnC = document.getElementById('btnCopy');
             const btnP = document.getElementById('btnPrintDirect');
-            const btnPdf = document.getElementById('btnPDF');
             const disabledClasses = ['bg-slate-700', 'cursor-not-allowed', 'text-slate-500'];
             
-            [btnD, btnC, btnPdf].forEach(b => { 
+            [btnD, btnC].forEach(b => { 
                 b.disabled = false; 
                 b.classList.remove(...disabledClasses); 
             });
             
-            // Se tiver impressora, habilita
             if(serialPort) {
                 btnP.disabled = false;
                 btnP.classList.remove(...disabledClasses);
@@ -681,13 +657,11 @@ ${bot.validade ? `^FO235,590^GB550,65,85^FS\n^FO250,600^A0N,95,90^FR^FDVAL: ${bo
             }
 
             btnD.classList.add('bg-success', 'text-white', 'hover:brightness-110');
-            btnPdf.classList.add('bg-slate-600', 'text-white', 'hover:brightness-110');
             btnC.classList.add('bg-accent', 'text-white', 'hover:brightness-110');
             
             showToast("ZPL Gerado!");
         }
 
-        // --- AÇÕES DE DOWNLOAD E CÓPIA ---
         function downloadFile() {
             const content = document.getElementById('finalZPL').value;
             const blob = new Blob([content], { type: 'text/plain' });
