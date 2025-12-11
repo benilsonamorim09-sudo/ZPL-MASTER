@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ZPL Master | Benilson Amorim</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- SheetJS (Excel) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    
+    <!-- Ícones -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=JetBrains+Mono:wght@500&display=swap');
+        
+        :root { --accent: #3b82f6; }
+
+        body { font-family: 'Inter', sans-serif; background-color: #0f172a; color: #e2e8f0; overflow-x: hidden; }
+        
+        /* Glass Effect */
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.6);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        /* Inputs */
+        .input-std {
+            background: #1e293b;
+            border: 1px solid #334155;
+            color: white;
+            transition: all 0.2s;
+        }
+        .input-std:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.1);
+            outline: none;
+        }
+
+        /* Animações e Utilitários */
+        .loader-overlay {
+            position: absolute; inset: 0; background: rgba(15, 23, 42, 0.95);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            z-index: 50; opacity: 0; pointer-events: none; transition: opacity 0.3s;
+        }
+        .loader-overlay.active { opacity: 1; pointer-events: all; }
+        .tab-bg { transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); background-color: var(--accent); }
+        
+        .text-accent { color: var(--accent); transition: color 0.5s; }
+        .bg-accent { background-color: var(--accent); transition: background-color 0.5s; }
+        .border-accent { border-color: var(--accent); transition: border-color 0.5s; }
+    </style>
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        darkbg: '#0f172a',
+                        success: '#10b981',
+                        danger: '#ef4444',
+                        warning: '#f59e0b'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace']
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-center pt-10 pb-4 px-4 relative">
+
+    <!-- FAIXA DE AVISO -->
+    <div class="fixed top-0 left-0 w-full bg-warning/20 border-b border-warning/30 text-warning text-center py-2 z-[60] backdrop-blur-md">
+        <p class="text-[10px] md:text-xs font-bold uppercase tracking-widest flex items-center justify-center gap-2">
+            <i class="fa-solid fa-triangle-exclamation"></i> 
+            Sistema em Desenvolvimento (Versão BETA) — Pode conter falhas
+        </p>
+    </div>
+
+    <!-- ================= TELA DE LOGIN ================= -->
+    <section id="loginScreen" class="w-full max-w-md glass-panel p-8 rounded-2xl z-50 mt-8">
+        <div class="text-center mb-8">
+            <div class="w-16 h-16 bg-blue-600/20 rounded-full flex items-center justify-center mx-auto mb-4 border border-blue-500/30">
+                <i class="fa-solid fa-shield-halved text-3xl text-blue-500"></i>
+            </div>
+            <h1 class="text-2xl font-bold text-white">Acesso Restrito</h1>
+            <p class="text-xs text-slate-400 mt-1">ZPL Master System</p>
+        </div>
+
+        <form onsubmit="handleLogin(event)" class="space-y-4">
+            <div>
+                <label class="text-xs font-bold text-slate-400 uppercase ml-1">Usuário</label>
+                <input type="text" id="loginUser" class="input-std w-full rounded-xl py-3 px-4 font-mono text-sm mt-1" placeholder="Digite seu usuário" required>
+            </div>
+            <div>
+                <label class="text-xs font-bold text-slate-400 uppercase ml-1">Senha</label>
+                <input type="password" id="loginPass" class="input-std w-full rounded-xl py-3 px-4 font-mono text-sm mt-1" placeholder="••••••••" required>
+            </div>
+            <p id="loginError" class="text-xs text-red-500 font-bold text-center h-4"></p>
+            <button type="submit" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-xl transition shadow-lg flex items-center justify-center gap-2">
+                <i class="fa-solid fa-right-to-bracket"></i> Entrar
+            </button>
+        </form>
+        
+        <div class="mt-6 text-center border-t border-slate-700 pt-4">
+            <p class="text-[10px] text-yellow-500/80 font-bold">⚠ Versão Beta: Funcionalidades em teste</p>
+            <p class="text-[10px] text-slate-500 mt-1">Desenvolvido por Benilson Amorim</p>
+        </div>
+    </section>
+
+    <!-- ================= SISTEMA PRINCIPAL ================= -->
+    <div id="appContent" class="hidden w-full max-w-6xl pb-10 mt-4">
+        
+        <!-- Header -->
+        <header class="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
+            <div class="text-center md:text-left">
+                <h1 class="text-3xl font-extrabold text-white tracking-tight">
+                    <i class="fa-solid fa-print text-accent mr-2"></i>ZPL <span class="text-accent">Master</span>
+                </h1>
+                <p class="text-[10px] text-slate-400 uppercase tracking-widest mt-1">Olá, <span id="userNameDisplay" class="text-white font-bold">Usuário</span></p>
+            </div>
+            <div class="flex items-center gap-3">
+                 <span id="globalStatus" class="hidden md:inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-800 border border-slate-700 text-xs font-mono text-slate-400 transition-colors duration-300">
+                    <i class="fa-solid fa-circle text-[8px]"></i> Desconectado
+                </span>
+                <button onclick="toggleModal(true)" class="bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-lg text-xs font-bold transition shadow border border-slate-600">
+                    <i class="fa-solid fa-circle-question mr-1"></i> Ajuda
+                </button>
+                <button onclick="doLogout()" class="bg-red-900/30 hover:bg-red-600 text-red-200 hover:text-white px-4 py-2 rounded-lg text-xs font-bold transition shadow border border-red-900/50 flex items-center gap-2">
+                    <i class="fa-solid fa-power-off"></i> Sair
+                </button>
+            </div>
+        </header>
+
+        <main class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+            <!-- LADO ESQUERDO -->
+            <div class="lg:col-span-5 space-y-6">
+                
+                <!-- UPLOAD -->
+                <section class="glass-panel rounded-2xl p-0 relative overflow-hidden min-h-[100px] flex flex-col justify-center">
+                    <div id="uploadLoader" class="loader-overlay">
+                        <i class="fa-solid fa-circle-notch fa-spin text-4xl text-accent mb-2"></i>
+                        <p class="text-sm font-bold text-white">Lendo Planilha...</p>
+                    </div>
+                    <!-- Vazio -->
+                    <div id="uploadEmpty" class="p-5 transition-opacity duration-300">
+                        <label class="flex items-center justify-between cursor-pointer group">
+                            <div>
+                                <h2 class="font-bold text-white text-sm">Carregar Excel</h2>
+                                <p class="text-[10px] text-slate-400">Colunas: A, B, E, F, G, H</p>
+                            </div>
+                            <div class="bg-accent group-hover:brightness-110 text-white px-4 py-2 rounded-lg text-xs font-bold transition shadow-lg flex items-center gap-2">
+                                <i class="fa-solid fa-upload"></i> Selecionar
+                            </div>
+                            <input type="file" id="fileInput" accept=".xlsx, .xls" class="hidden">
+                        </label>
+                    </div>
+                    <!-- Carregado -->
+                    <div id="uploadSuccess" class="hidden p-4 bg-emerald-900/20 border-l-4 border-emerald-500 h-full flex flex-col justify-center">
+                        <div class="flex justify-between items-center">
+                            <div class="flex items-center gap-3">
+                                <div class="bg-emerald-500/20 p-2 rounded-full text-emerald-400">
+                                    <i class="fa-solid fa-file-excel text-xl"></i>
+                                </div>
+                                <div>
+                                    <h2 id="fileName" class="font-bold text-white text-sm truncate w-40">arquivo.xlsx</h2>
+                                    <p id="rowCount" class="text-[10px] text-emerald-400 font-bold">0 Produtos</p>
+                                </div>
+                            </div>
+                            <button onclick="document.getElementById('fileInput').click()" class="text-xs bg-slate-800 hover:bg-slate-700 text-white px-3 py-2 rounded border border-slate-600 transition">
+                                <i class="fa-solid fa-rotate mr-1"></i> Trocar
+                            </button>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- MODOS -->
+                <section class="glass-panel rounded-2xl p-1 flex gap-1 bg-slate-900/40">
+                    <button onclick="setMode('validade')" id="btnVal" class="flex-1 py-3 rounded-xl text-sm font-bold transition-all bg-accent text-white shadow-lg">
+                        <i class="fa-regular fa-calendar-check mr-1"></i> Validade
+                    </button>
+                    <button onclick="setMode('endereco')" id="btnEnd" class="flex-1 py-3 rounded-xl text-sm font-bold transition-all text-slate-400 hover:text-white hover:bg-slate-800">
+                        <i class="fa-solid fa-dolly mr-1"></i> Endereço
+                    </button>
+                </section>
+
+                <!-- OPERAÇÃO -->
+                <section class="glass-panel rounded-2xl p-6 relative min-h-[300px] flex flex-col">
+                    <div id="lockScreen" class="absolute inset-0 z-20 bg-slate-900/95 backdrop-blur-sm rounded-2xl flex flex-col items-center justify-center text-center p-4">
+                        <div class="w-12 h-12 bg-slate-800 rounded-full flex items-center justify-center mb-3 ring-1 ring-slate-700">
+                            <i class="fa-solid fa-lock text-slate-500"></i>
+                        </div>
+                        <p class="text-sm text-slate-300 font-bold">Aguardando Base de Dados</p>
+                    </div>
+
+                    <!-- FORM VALIDADE -->
+                    <div id="formValidade" class="space-y-4">
+                        <div class="bg-slate-800/50 border border-slate-700 p-3 rounded-lg mb-4 flex gap-2 items-start">
+                            <i class="fa-solid fa-info-circle text-accent mt-0.5 text-xs"></i>
+                            <p class="text-xs text-slate-300">Digite o código > Enter > Digite a data > Enter.</p>
+                        </div>
+                        <div>
+                            <label class="text-xs font-bold text-slate-400 uppercase ml-1">Código (Somente Números)</label>
+                            <div class="relative mt-1">
+                                <i class="fa-solid fa-barcode absolute left-3 top-3 text-slate-500"></i>
+                                <input type="text" id="valCode" inputmode="numeric" class="input-std w-full rounded-xl py-3 pl-10 pr-4 font-mono text-lg" placeholder="Scan..." 
+                                       oninput="this.value=this.value.replace(/[^0-9]/g,''); checkValidadeCode(this)" 
+                                       onkeydown="handleEnter(event, 'valCode')">
+                            </div>
+                            <div id="valPreview" class="h-5 text-xs font-bold mt-1 pl-1 truncate"></div>
+                        </div>
+                        <div id="dateContainer" class="hidden">
+                            <label class="text-xs font-bold text-accent uppercase ml-1">Validade (Somente Números)</label>
+                            <div class="relative mt-1">
+                                <i class="fa-solid fa-calendar absolute left-3 top-3 text-accent"></i>
+                                <input type="text" id="valDate" inputmode="numeric" class="input-std w-full rounded-xl py-3 pl-10 pr-4 font-mono text-lg border-accent focus:border-accent" placeholder="MM/AAAA" 
+                                       oninput="maskDate(this)" 
+                                       onkeydown="handleEnter(event, 'valDate')">
+                                <button onclick="addValItem()" class="absolute right-2 top-2 bottom-2 bg-success hover:bg-emerald-600 text-white px-4 rounded-lg text-sm font-bold transition">OK</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- FORM ENDEREÇO -->
+                    <div id="formEndereco" class="hidden flex flex-col h-full">
+                        <div class="relative flex bg-slate-900 rounded-lg p-1 mb-6 border border-slate-700/50">
+                            <div id="tabBg" class="tab-bg absolute top-1 bottom-1 left-1 w-[calc(50%-4px)] bg-blue-600 rounded-md shadow-lg z-0"></div>
+                            <button onclick="switchTab('unit')" class="flex-1 py-2 text-xs font-bold uppercase tracking-wider relative z-10 text-white transition-colors" id="btnTabUnit">Unitário</button>
+                            <button onclick="switchTab('mass')" class="flex-1 py-2 text-xs font-bold uppercase tracking-wider relative z-10 text-slate-400 hover:text-white transition-colors" id="btnTabMass">Massa</button>
+                        </div>
+                        <div id="singleEntry" class="space-y-4">
+                            <label class="text-xs font-bold text-slate-400 uppercase ml-1">Código Unitário</label>
+                            <div class="flex gap-2">
+                                <input type="text" id="endCode" inputmode="numeric" class="input-std flex-grow rounded-xl py-3 px-4 font-mono text-lg" placeholder="Scan..." 
+                                       oninput="this.value=this.value.replace(/[^0-9]/g,''); checkEndCode(this)"
+                                       onkeydown="handleEnter(event, 'endCode')">
+                                <button onclick="addEndItem()" class="bg-accent hover:brightness-110 text-white px-5 rounded-xl font-bold text-lg shadow-lg"><i class="fa-solid fa-plus"></i></button>
+                            </div>
+                            <div id="endPreview" class="h-5 text-xs font-bold mt-1 pl-1 truncate text-slate-500"></div>
+                        </div>
+                        <div id="massEntry" class="hidden space-y-2">
+                            <label class="text-xs font-bold text-slate-400 uppercase ml-1">Colar Lista</label>
+                            <textarea id="endList" rows="5" class="input-std w-full rounded-xl p-3 font-mono text-xs" placeholder="73804&#10;73805..."></textarea>
+                            <button onclick="addEndList()" class="w-full bg-slate-700 hover:bg-slate-600 text-white py-3 rounded-xl text-sm font-bold transition shadow-lg border border-slate-600">Processar</button>
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+            <!-- DIREITA (FILA) -->
+            <div class="lg:col-span-7 space-y-6 flex flex-col h-full">
+                <section class="glass-panel rounded-2xl p-5 flex-grow flex flex-col min-h-[400px]">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="font-bold text-white flex items-center gap-2">
+                            <i class="fa-solid fa-list-check text-accent"></i> Fila de Impressão
+                            <span id="queueBadge" class="bg-accent text-white text-[10px] px-2 py-0.5 rounded-full shadow">0</span>
+                        </h2>
+                        <button onclick="clearQueue()" class="text-xs text-red-400 hover:text-red-300 underline font-bold cursor-pointer transition">
+                            <i class="fa-solid fa-trash-can mr-1"></i> Limpar Fila
+                        </button>
+                    </div>
+
+                    <div class="flex-grow overflow-y-auto bg-slate-900/50 rounded-xl border border-slate-700/50 relative h-64">
+                        <table class="w-full text-left text-sm text-slate-400">
+                            <thead class="bg-slate-800 text-xs uppercase font-bold text-slate-300 sticky top-0 z-10">
+                                <tr>
+                                    <th class="p-3 w-10">#</th>
+                                    <th class="p-3">Produto</th>
+                                    <th class="p-3">Validade</th>
+                                    <th class="p-3 text-right"></th>
+                                </tr>
+                            </thead>
+                            <tbody id="queueTable" class="divide-y divide-slate-700/50">
+                                <tr><td colspan="4" class="p-10 text-center text-slate-600 italic">Fila vazia.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-2 mt-4">
+                        <!-- Botão Gerar -->
+                        <button onclick="generateZPL()" class="col-span-2 md:col-span-1 bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-xl transition shadow-lg flex justify-center items-center gap-2 active:scale-95">
+                            <i class="fa-solid fa-wand-magic-sparkles"></i> Gerar
+                        </button>
+                        
+                        <!-- Botão Imprimir Direto -->
+                        <button onclick="printDirect()" id="btnPrintDirect" disabled class="col-span-2 md:col-span-1 bg-slate-700 text-slate-500 font-bold py-3 rounded-xl transition flex justify-center items-center gap-2 cursor-not-allowed border border-slate-600">
+                            <i class="fa-solid fa-print"></i> Direto
+                        </button>
+
+                        <!-- Botão PDF -->
+                        <button onclick="printPDF()" id="btnPDF" disabled class="col-span-2 md:col-span-1 bg-slate-700 text-slate-500 font-bold py-3 rounded-xl transition flex justify-center items-center gap-2 cursor-not-allowed border border-slate-600">
+                            <i class="fa-solid fa-file-pdf"></i> PDF
+                        </button>
+
+                        <button onclick="downloadFile()" id="btnDownload" disabled class="col-span-2 md:col-span-1 bg-slate-700 text-slate-500 font-bold py-3 rounded-xl transition flex justify-center items-center gap-2 cursor-not-allowed border border-slate-600">
+                            <i class="fa-solid fa-download"></i> Baixar
+                        </button>
+                    </div>
+                    
+                    <textarea id="finalZPL" readonly class="mt-4 w-full h-24 bg-black text-green-500 font-mono text-[10px] p-2 rounded border border-slate-700 focus:outline-none resize-none" placeholder="O código ZPL aparecerá aqui..."></textarea>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <!-- FOOTER -->
+    <footer class="w-full text-center text-slate-600 text-[10px] uppercase font-bold tracking-widest pb-4">
+        &copy; 2025 ZPL Master • Criado por Benilson Amorim
+    </footer>
+
+    <!-- MODAL DE AJUDA -->
+    <div id="helpModal" class="fixed inset-0 z-50 hidden">
+        <div class="absolute inset-0 bg-black/80 backdrop-blur-sm" onclick="toggleModal(false)"></div>
+        <div id="modalContent" class="relative bg-slate-800 rounded-2xl max-w-2xl w-full mx-4 my-10 shadow-2xl border border-slate-700 overflow-hidden transform scale-95 opacity-0 transition-all duration-300 left-1/2 top-10 -translate-x-1/2">
+            <div class="bg-slate-900 p-6 flex justify-between items-center border-b border-slate-700">
+                <h3 class="text-xl font-bold text-white flex items-center gap-2"><i class="fa-solid fa-book-open text-accent"></i> Manual</h3>
+                <button onclick="toggleModal(false)" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-xl"></i></button>
+            </div>
+            <div class="p-8 space-y-6 max-h-[70vh] overflow-y-auto">
+                <div class="p-3 bg-yellow-500/10 border-l-4 border-yellow-500 rounded">
+                    <p class="text-xs text-yellow-200 font-bold">AVISO: Se não imprimir direto</p>
+                    <p class="text-[10px] text-yellow-100/70 mt-1">O Windows pode estar bloqueando a porta. Instale a impressora como <strong>"Generic / Text Only"</strong> ou use o botão <strong>"Gerar PDF"</strong>.</p>
+                </div>
+                <div>
+                    <h4 class="text-accent font-bold text-sm uppercase mb-3">1. Impressão Direta (USB)</h4>
+                    <div class="flex items-center gap-3 mb-2">
+                        <button onclick="connectPrinter()" id="btnConnect" class="bg-slate-800 hover:bg-slate-700 text-slate-400 px-4 py-2 rounded-lg text-xs font-bold transition shadow border border-slate-600 flex items-center gap-2">
+                            <i class="fa-brands fa-usb"></i> <span>Conectar Impressora</span>
+                        </button>
+                        <span class="text-xs text-slate-400"> <- 1º Passo</span>
+                    </div>
+                    <ol class="list-decimal list-inside text-xs text-slate-400 space-y-1">
+                        <li>Use o navegador <strong>Google Chrome</strong> ou <strong>Edge</strong> no PC.</li>
+                        <li>Conecte a impressora Zebra via USB.</li>
+                        <li>Clique no botão acima "Conectar Impressora".</li>
+                        <li>Selecione a impressora na janela que abrir.</li>
+                        <li>Após gerar, use o botão <strong>"Direto"</strong> no painel principal.</li>
+                    </ol>
+                </div>
+                <div>
+                    <h4 class="text-accent font-bold text-sm uppercase mb-3">2. Colunas da Planilha (Posição Fixa)</h4>
+                    <div class="grid grid-cols-3 gap-2 text-xs text-slate-300 font-mono">
+                        <div class="bg-slate-900 p-2 rounded">A: CÓDIGO</div><div class="bg-slate-900 p-2 rounded">B: NOME</div><div class="bg-slate-900 p-2 rounded">E: RUA</div>
+                        <div class="bg-slate-900 p-2 rounded">F: RACK</div><div class="bg-slate-900 p-2 rounded">G: LINHA</div><div class="bg-slate-900 p-2 rounded">H: COLUNA</div>
+                    </div>
+                </div>
+                <div class="border-t border-slate-700 pt-6 text-center">
+                    <p class="text-slate-500 text-xs uppercase tracking-widest font-bold">Criado por</p>
+                    <h2 class="text-2xl font-extrabold text-white mt-1">Benilson Amorim</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TOAST -->
+    <div id="toast" class="fixed bottom-10 left-1/2 -translate-x-1/2 bg-emerald-600 text-white px-6 py-3 rounded-lg shadow-xl font-bold opacity-0 pointer-events-none transition-opacity duration-300 z-[60] flex items-center gap-2 transform translate-y-4">
+        <i class="fa-solid fa-check-circle"></i> <span>Sucesso!</span>
+    </div>
+
+    <script>
+        // --- 1. AUTENTICAÇÃO ---
+        const USERS = [
+            {u:'danzk47',p:'vidaloka13'}, {u:'estoque',p:'zpl2025'}, {u:'expedicao',p:'carga55'},
+            {u:'benilson',p:'devmaster'}, {u:'operador1',p:'etiqueta01'}, {u:'visitante',p:'teste123'}
+        ];
+        if(sessionStorage.getItem('zplUser')) showApp(sessionStorage.getItem('zplUser'));
+
+        function handleLogin(e) { e.preventDefault(); const u=document.getElementById('loginUser').value, p=document.getElementById('loginPass').value, err=document.getElementById('loginError'); const valid=USERS.find(user=>user.u===u&&user.p===p); if(valid){sessionStorage.setItem('zplUser',valid.u); showApp(valid.u);}else{err.innerText="Credenciais inválidas"; setTimeout(()=>err.innerText="",2000);} }
+        function showApp(u) { document.getElementById('loginScreen').style.display='none'; document.getElementById('appContent').classList.remove('hidden'); document.getElementById('userNameDisplay').innerText=u; document.body.classList.remove('justify-center'); document.body.classList.add('pt-10'); }
+        function doLogout() { sessionStorage.removeItem('zplUser'); location.reload(); }
+
+        // --- 2. SISTEMA ZPL ---
+        let inventory = [], printQueue = [], currentMode = 'validade';
+        let serialPort = null;
+
+        // --- WEB SERIAL API ---
+        async function connectPrinter() {
+            if (!('serial' in navigator)) return alert("Seu navegador não suporta conexão Serial/USB (Use Chrome ou Edge).");
+            try {
+                serialPort = await navigator.serial.requestPort();
+                await serialPort.open({ baudRate: 115200 }); 
+                const btn = document.getElementById('btnConnect');
+                btn.innerHTML = `<i class="fa-solid fa-link"></i> <span>Conectado</span>`;
+                btn.classList.replace('text-slate-400', 'text-emerald-400');
+                btn.classList.add('border-emerald-500/50');
+                showToast("Impressora Conectada!");
+                
+                if(document.getElementById('finalZPL').value !== "") {
+                    document.getElementById('btnPrintDirect').disabled = false;
+                    document.getElementById('btnPrintDirect').classList.remove('cursor-not-allowed', 'bg-slate-700', 'text-slate-500');
+                    document.getElementById('btnPrintDirect').classList.add('bg-success', 'text-white', 'hover:brightness-110');
+                }
+            } catch (err) {
+                alert("Erro conexão: " + err.message + "\nDica: Instale o driver da impressora como 'Generic / Text Only' ou use o botão 'Gerar PDF'.");
+            }
+        }
+
+        async function printDirect() {
+            const zpl = document.getElementById('finalZPL').value;
+            if (!zpl) return alert("Gere o código primeiro.");
+            if (!serialPort) return alert("Conecte a impressora primeiro.");
+
+            try {
+                const encoder = new TextEncoder();
+                const writer = serialPort.writable.getWriter();
+                await writer.write(encoder.encode(zpl));
+                writer.releaseLock();
+                showToast("Enviado para impressora!");
+            } catch (err) {
+                alert("Erro ao imprimir: " + err.message);
+            }
+        }
+
+        // --- IMPRESSÃO VIA PDF (PLANO B) ---
+        function printPDF() {
+            const zpl = document.getElementById('finalZPL').value;
+            if (!zpl) return alert("Gere o código primeiro.");
+            
+            // Usando API pública do Labelary
+            const url = `http://api.labelary.com/v1/printers/8dpmm/labels/4x6/0/`;
+            
+            const form = document.createElement("form");
+            form.setAttribute("method", "post");
+            form.setAttribute("action", url);
+            form.setAttribute("target", "_blank"); 
+
+            const input = document.createElement("textarea");
+            input.setAttribute("name", "zpl");
+            input.value = zpl;
+            
+            form.appendChild(input);
+            document.body.appendChild(form);
+            form.submit();
+            document.body.removeChild(form);
+            
+            showToast("Gerando PDF...");
+        }
+
+        // Upload
+        document.getElementById('fileInput').addEventListener('change', async (e) => {
+            const file = e.target.files[0]; if (!file) return;
+            document.getElementById('uploadLoader').classList.add('active');
+            setTimeout(async () => {
+                try {
+                    const buffer = await file.arrayBuffer();
+                    const wb = XLSX.read(buffer, { type: 'array' });
+                    const ws = wb.Sheets[wb.SheetNames[0]];
+                    const raw = XLSX.utils.sheet_to_json(ws, { header: 1 });
+                    inventory = raw.slice(1).map(r => {
+                        if (!r || !r[0]) return null;
+                        const clean = v => String(v || "").trim().toUpperCase();
+                        return { COD: clean(r[0]), NOM: clean(r[1]), RUA: clean(r[4]), RCK: clean(r[5]), LIN: clean(r[6]), COL: clean(r[7]) };
+                    }).filter(i => i !== null);
+
+                    document.getElementById('lockScreen').classList.add('hidden');
+                    document.getElementById('uploadEmpty').classList.add('hidden');
+                    document.getElementById('uploadSuccess').classList.remove('hidden');
+                    document.getElementById('fileName').innerText = file.name;
+                    document.getElementById('rowCount').innerText = `${inventory.length} Produtos`;
+                    document.getElementById('globalStatus').innerHTML = `<i class="fa-solid fa-circle text-[8px]"></i> Base Ativa`;
+                    document.getElementById('globalStatus').className = "hidden md:inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-800 border border-emerald-500/50 text-xs font-mono text-emerald-400 transition-colors duration-300";
+                    showToast("Carregamento Concluído");
+                } catch (err) { alert("Erro: " + err.message); }
+                finally { document.getElementById('uploadLoader').classList.remove('active'); e.target.value = ''; }
+            }, 600);
+        });
+
+        // Utils UI
+        function toggleModal(show) {
+            const m = document.getElementById('helpModal'), c = document.getElementById('modalContent');
+            if(show) { m.classList.remove('hidden'); setTimeout(()=> { c.classList.remove('scale-95','opacity-0'); c.classList.add('scale-100','opacity-100'); },10); }
+            else { c.classList.remove('scale-100','opacity-100'); c.classList.add('scale-95','opacity-0'); setTimeout(()=>m.classList.add('hidden'),300); }
+        }
+        function switchTab(tab) {
+            const bg = document.getElementById('tabBg'), bU = document.getElementById('btnTabUnit'), bM = document.getElementById('btnTabMass');
+            if(tab === 'unit') {
+                bg.style.transform = 'translateX(0)'; bU.classList.replace('text-slate-400','text-white'); bM.classList.replace('text-white','text-slate-400');
+                document.getElementById('singleEntry').classList.remove('hidden'); document.getElementById('massEntry').classList.add('hidden'); document.getElementById('endCode').focus();
+            } else {
+                bg.style.transform = 'translateX(100%)'; bM.classList.replace('text-slate-400','text-white'); bU.classList.replace('text-white','text-slate-400');
+                document.getElementById('singleEntry').classList.add('hidden'); document.getElementById('massEntry').classList.remove('hidden'); document.getElementById('endList').focus();
+            }
+        }
+        function setMode(m) {
+            currentMode = m;
+            document.getElementById('formValidade').classList.toggle('hidden', m !== 'validade'); document.getElementById('formEndereco').classList.toggle('hidden', m !== 'endereco');
+            
+            const root = document.documentElement;
+            const btnVal = document.getElementById('btnVal'), btnEnd = document.getElementById('btnEnd');
+            if(m==='validade') {
+                root.style.setProperty('--accent', '#3b82f6');
+                btnVal.className="flex-1 py-3 rounded-xl text-sm font-bold bg-accent text-white shadow-lg transition"; 
+                btnEnd.className="flex-1 py-3 rounded-xl text-sm font-bold bg-slate-800 text-slate-400 hover:text-white transition";
+                setTimeout(()=>document.getElementById('valCode').focus(),100);
+            } else {
+                root.style.setProperty('--accent', '#a855f7');
+                btnEnd.className="flex-1 py-3 rounded-xl text-sm font-bold bg-accent text-white shadow-lg transition"; 
+                btnVal.className="flex-1 py-3 rounded-xl text-sm font-bold bg-slate-800 text-slate-400 hover:text-white transition";
+                switchTab('unit');
+            }
+        }
+        function findProduct(code) { return inventory.find(i => i.COD == code); }
+        
+        // EAN SCAN LOGIC FIX
+        function extractEAN(val) {
+            val = val.replace(/\D/g, ''); 
+            if (val.length >= 12) return val.slice(-6, -1);
+            return val;
+        }
+
+        function maskDate(el) { let v = el.value.replace(/\D/g, ''); if(v.length>2) v = v.substring(0,2)+'/'+v.substring(2,6); el.value=v; }
+        function showToast(msg) { const t=document.getElementById('toast'); t.querySelector('span').innerText=msg; t.classList.remove('opacity-0','translate-y-4'); setTimeout(()=>t.classList.add('opacity-0','translate-y-4'),2500); }
+        function handleEnter(e, type) { if(e.key==="Enter") { if(type==='valCode') checkValidadeCode(document.getElementById('valCode')); else if(type==='valDate') addValItem(); else if(type==='endCode') addEndItem(); } }
+
+        // Logic
+        function checkValidadeCode(el) {
+            let val = el.value.replace(/\D/g,''); 
+            let finalVal = val;
+            if(val.length >= 12) finalVal = extractEAN(val);
+
+            const prod = findProduct(finalVal);
+            const prev = document.getElementById('valPreview');
+            const dc = document.getElementById('dateContainer');
+
+            if(prod) { 
+                el.value = finalVal;
+                prev.innerText = prod.NOM; 
+                prev.className = "h-5 text-xs font-bold mt-1 pl-1 truncate text-success"; 
+                dc.classList.remove('hidden'); 
+                setTimeout(()=>document.getElementById('valDate').focus(), 100); 
+            }
+            else { 
+                prev.innerText = val.length > 3 ? "Não encontrado" : ""; 
+                prev.className = "h-5 text-xs font-bold mt-1 pl-1 truncate text-danger"; 
+                dc.classList.add('hidden'); 
+            }
+        }
+        
+        function checkEndCode(el) {
+            let val = el.value.replace(/\D/g,''); 
+            if(val.length >= 12) val = extractEAN(val); 
+            const prod = findProduct(val); 
+            const prev = document.getElementById('endPreview');
+            if(prod) { prev.innerText=prod.NOM; prev.className="h-5 text-xs font-bold mt-1 pl-1 truncate text-success"; }
+            else { prev.innerText=val.length>3?"Não encontrado":""; prev.className="h-5 text-xs font-bold mt-1 pl-1 truncate text-slate-500"; }
+        }
+
+        function addValItem() {
+            const el = document.getElementById('valCode');
+            let code = el.value.replace(/\D/g,'');
+            if(code.length >= 12) code = extractEAN(code);
+
+            const date = document.getElementById('valDate').value;
+            if(date.length < 7) return alert("Data inválida");
+            
+            const prod = findProduct(code);
+            if(prod){ 
+                printQueue.push({...prod,validade:date}); updateQueueUI(); 
+                document.getElementById('valCode').value=""; document.getElementById('valDate').value=""; 
+                document.getElementById('valPreview').innerText=""; document.getElementById('dateContainer').classList.add('hidden'); 
+                document.getElementById('valCode').focus(); showToast("Adicionado!"); 
+            }
+        }
+
+        function addEndItem() {
+            const el = document.getElementById('endCode'); 
+            let val = el.value.replace(/\D/g,''); 
+            if(val.length >= 12) val = extractEAN(val);
+            
+            const prod = findProduct(val);
+            if(prod){ 
+                printQueue.push({...prod,validade:""}); updateQueueUI(); 
+                el.value=""; el.focus(); showToast("Adicionado!"); 
+            } else alert("Produto não encontrado");
+        }
+
+        function addEndList() {
+            const raw = document.getElementById('endList').value;
+            const lines = raw.split(/[\n,;]+/).map(x => extractEAN(x.replace(/\D/g,''))).filter(x => x);
+            let c=0; 
+            lines.forEach(x => { const p = findProduct(x); if(p){ printQueue.push({...p,validade:""}); c++; }});
+            if(c>0){ updateQueueUI(); document.getElementById('endList').value=""; showToast(`${c} itens`); } 
+            else alert("Nenhum válido.");
+        }
+
+        // Queue
+        function updateQueueUI() {
+            const tbody=document.getElementById('queueTable'); document.getElementById('queueBadge').innerText=printQueue.length;
+            const btnD=document.getElementById('btnDownload'), btnC=document.getElementById('btnCopy'), btnP=document.getElementById('btnPrintDirect'), btnPdf=document.getElementById('btnPDF');
+            [btnD, btnC, btnP, btnPdf].forEach(b => { b.disabled=true; b.classList.add('bg-slate-700','cursor-not-allowed','text-slate-500'); b.classList.remove('bg-success','bg-accent','text-white','hover:brightness-110'); });
+            document.getElementById('finalZPL').value="";
+            if(printQueue.length===0){ tbody.innerHTML=`<tr><td colspan="4" class="p-10 text-center text-slate-600 italic">Fila vazia.</td></tr>`; return; }
+            tbody.innerHTML="";
+            printQueue.forEach((item,idx)=>{
+                const tr=document.createElement('tr'); tr.className="border-b border-slate-700/50 hover:bg-slate-800/50 transition";
+                tr.innerHTML=`<td class="p-3 font-mono text-slate-500 text-xs">${idx+1}</td>
+                <td class="p-3"><div class="font-bold text-white text-xs">${item.COD}</div><div class="text-[10px] truncate w-32">${item.NOM}</div></td>
+                <td class="p-3 font-mono text-success text-xs">${item.validade||'-'}</td>
+                <td class="p-3 text-right"><button onclick="removeItem(${idx})" class="text-slate-500 hover:text-red-500 transition"><i class="fa-solid fa-times"></i></button></td>`;
+                tbody.appendChild(tr);
+            });
+            tbody.parentElement.scrollTop=tbody.parentElement.scrollHeight;
+        }
+        function removeItem(idx) { printQueue.splice(idx,1); updateQueueUI(); }
+        function clearQueue() { if(printQueue.length===0)return; if(confirm("Deseja limpar toda a fila?")){printQueue=[]; updateQueueUI(); showToast("Fila Limpa");} }
+
+        function generateZPL() {
+            if(printQueue.length===0) return alert("Fila vazia.");
+            let fullCode="";
+            
+            const clean = (t, type) => {
+                let s = String(t || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
+                if(type === 'RUA') s = s.replace(/^RUA\s*:?\s*/i, "");
+                if(type === 'RCK') s = s.replace(/^RACK\s*:?\s*/i, "");
+                if(type === 'LIN') s = s.replace(/^(LINHA|LIN)\s*:?\s*/i, "");
+                if(type === 'COL') s = s.replace(/^(COLUNA|COL)\s*:?\s*/i, "");
+                return s.trim().substring(0, 28);
+            };
+
+            for (let i = 0; i < printQueue.length; i += 2) {
+                const top = printQueue[i];
+                const bot = (i + 1 < printQueue.length) ? printQueue[i + 1] : null;
+
+                let zpl = `^XA\n^CI28^PW812^LL609^LH0,0^MD30\n`;
+
+                // --- ETIQUETA TOPO ---
+                zpl += `^FX TOPO
+^FO20,5^A0N,100,90^FD${top.COD}^FS
+${top.validade ? `^FO235,-5^GB550,60,75^FS\n^FO250,5^A0N,95,90^FR^FDVAL: ${top.validade}^FS` : ''}
+^FO20,110^A0N,75,75^FB770,2,0,L,0^FD${clean(top.NOM)}^FS
+^FO20,280^A0N,45,45^FDRUA: ${clean(top.RUA,'RUA')} - RACK: ${clean(top.RCK,'RCK')}^FS
+^FO20,330^A0N,45,45^FDLINHA: ${clean(top.LIN,'LIN')} - COL: ${clean(top.COL,'COL')}^FS
+^BY4,3,100^FO20,390^BCN,130,Y,N,N^FD${top.COD}^FS
+^FO620,370^BQN,2,4,Q,150^FDLA,https://www.instagram.com/dan_zk47?igsh=MXF5azdnZW01MzQ0^FS\n`;
+
+                // --- ETIQUETA BASE ---
+                if (bot) {
+                    zpl += `^FX BASE
+^FO20,600^A0N,100,90^FD${bot.COD}^FS
+${bot.validade ? `^FO235,590^GB550,65,85^FS\n^FO250,600^A0N,95,90^FR^FDVAL: ${bot.validade}^FS` : ''}
+^FO20,705^A0N,75,75^FB770,2,0,L,0^FD${clean(bot.NOM)}^FS
+^FO20,875^A0N,45,45^FDRUA: ${clean(bot.RUA,'RUA')} - RACK: ${clean(bot.RCK,'RCK')}^FS
+^FO20,925^A0N,45,45^FDLINHA: ${clean(bot.LIN,'LIN')} - COL: ${clean(bot.COL,'COL')}^FS
+^BY4,3,100^FO20,985^BCN,130,Y,N,N^FD${bot.COD}^FS
+^FO620,965^BQN,2,4,Q,150^FDLA,https://www.instagram.com/dan_zk47?igsh=MXF5azdnZW01MzQ0^FS\n`;
+                }
+
+                zpl += `^XZ\n`;
+                fullCode += zpl;
+            }
+
+            document.getElementById('finalZPL').value = fullCode;
+            
+            const btnD = document.getElementById('btnDownload');
+            const btnC = document.getElementById('btnCopy');
+            const btnP = document.getElementById('btnPrintDirect');
+            const btnPdf = document.getElementById('btnPDF');
+            const disabledClasses = ['bg-slate-700', 'cursor-not-allowed', 'text-slate-500'];
+            
+            [btnD, btnC, btnPdf].forEach(b => { 
+                b.disabled = false; 
+                b.classList.remove(...disabledClasses); 
+            });
+            
+            // Se tiver impressora, habilita
+            if(serialPort) {
+                btnP.disabled = false;
+                btnP.classList.remove(...disabledClasses);
+                btnP.classList.add('bg-success', 'text-white', 'hover:brightness-110');
+            }
+
+            btnD.classList.add('bg-success', 'text-white', 'hover:brightness-110');
+            btnPdf.classList.add('bg-slate-600', 'text-white', 'hover:brightness-110');
+            btnC.classList.add('bg-accent', 'text-white', 'hover:brightness-110');
+            
+            showToast("ZPL Gerado!");
+        }
+
+        // --- AÇÕES DE DOWNLOAD E CÓPIA ---
+        function downloadFile() {
+            const content = document.getElementById('finalZPL').value;
+            const blob = new Blob([content], { type: 'text/plain' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `etiquetas_${new Date().getTime()}.txt`;
+            a.click();
+        }
+
+        function copyZPL() {
+            const txt = document.getElementById('finalZPL');
+            txt.select();
+            txt.setSelectionRange(0, 99999); 
+
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(txt.value)
+                    .then(() => showToast("Copiado!"))
+                    .catch(() => fallbackCopy());
+            } else {
+                fallbackCopy();
+            }
+        }
+
+        function fallbackCopy() {
+            try {
+                document.execCommand('copy');
+                showToast("Copiado!");
+            } catch (err) {
+                alert("Erro ao copiar.");
+            }
+        }
+    </script>
+</body>
+</html>
